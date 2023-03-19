@@ -2,32 +2,47 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-orbs:
-  node: circleci/node@5.1.0
-
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   build_and_test:
-    executor: node/default
+    docker:
+      - image: node:18
+      resource_class: large
+      parallelism: 10
+
     steps:
-      - run:
-          name: install pnpm
-          command: sudo npm i -g pnpm
       - checkout
       - restore_cache:
-          key: dependency-cache-{{ checksum "pnpm-lock.yaml" }}
-      - node/install-packages:
-          override-ci-command: pnpm i
-          cache-path: ~/.pnpm-store
-      - save_cache:
-          key: dependency-cache-{{ checksum "pnpm-lock.yaml" }}
-          paths:
-            - ./node_modules
-            - ./.next/cache
+          name: Restore pnpm Package Cache
+          keys:
+            - pnpm-packages-{{ checksum "pnpm-lock.yaml" }}
+      - run:
+          name: Install pnpm package manager
+          command: |
+            corepack enable
+            corepack prepare pnpm@latest-7 --activate
+      - run:
+          name: Install Dependencies
+          command: |
+            pnpm install
       - run:
           name: Run lint
           command: pnpm run lint
+      - run:
+          name: Build
+          command: pnpm run build
+      - save_cache:
+          name: Save pnpm Package Cache
+          key: pnpm-packages-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - node_modules
+            - ./.next/cache
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
   # say-hello:
   #   # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
   #   # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
