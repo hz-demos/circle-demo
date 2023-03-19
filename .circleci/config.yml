@@ -12,13 +12,13 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Update pnpm
-        command: sudo npm install -g pnpm
+          name: Update pnpm
+          command: sudo npm install -g pnpm
       - restore_cache:
           key: dependency-cache-{{ checksum "pnpm-lock.yaml" }}
       - run:
-        name: Install dependencies
-        command: pnpm install
+          name: Install dependencies
+          command: pnpm install
       - save_cache:
           key: dependency-cache-{{ checksum "pnpm-lock.yaml" }}
           paths:
